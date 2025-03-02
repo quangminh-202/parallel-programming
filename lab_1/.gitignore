@@ -1,0 +1,50 @@
+# ============================
+# C++ Build Files
+# ============================
+*.o
+*.out
+*.exe
+*.a
+*.so
+*.dll
+*.dSYM/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+Makefile
+makefile
+cmake_install.cmake
+
+# IDE and Editor Files (e.g., Visual Studio, CLion)
+.vscode/
+.idea/
+
+# Debug Files
+debug/
+
+# ============================
+# Python Bytecode and Virtual Environments
+# ============================
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Virtual Environments
+venv/
+env/
+myvenv/
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
+
+# IDE Files (e.g., PyCharm, VSCode)
+.vscode/
+.idea/
+
+# ============================
+# Other
+# ============================
+# Log files
+*.log
