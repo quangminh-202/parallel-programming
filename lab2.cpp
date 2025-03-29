@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <chrono>
-#include <omp.h> // add library OpenMP
+#include <omp.h>
 
 using namespace std;
 using namespace chrono;
@@ -54,12 +54,28 @@ vector<vector<int>> readMatrixFromFile(const string& filename, int& rows, int& c
     return matrix;
 }
 
-// Function to multiply two matrices with OpenMP
-vector<vector<int>> multiplyMatrices(const vector<vector<int>>& A, const vector<vector<int>>& B) {
+// Function to multiply two matrices sequentially (no threads)
+vector<vector<int>> multiplyMatricesSequential(const vector<vector<int>>& A, const vector<vector<int>>& B) {
     int m = A.size(), n = A[0].size(), p = B[0].size();
     vector<vector<int>> result(m, vector<int>(p, 0));
 
-    #pragma omp parallel for collapse(2) //
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < p; j++) {
+            for (int k = 0; k < n; k++) {
+                result[i][j] += A[i][k] * B[k][j];
+            }
+        }
+    }
+
+    return result;
+}
+
+// Function to multiply two matrices with OpenMP
+vector<vector<int>> multiplyMatricesParallel(const vector<vector<int>>& A, const vector<vector<int>>& B, int num_threads) {
+    int m = A.size(), n = A[0].size(), p = B[0].size();
+    vector<vector<int>> result(m, vector<int>(p, 0));
+
+    #pragma omp parallel for num_threads(num_threads)
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < p; j++) {
             for (int k = 0; k < n; k++) {
@@ -72,7 +88,7 @@ vector<vector<int>> multiplyMatrices(const vector<vector<int>>& A, const vector<
 }
 
 // Function to save the result matrix along with execution time and problem size
-void saveResultToFile(const string& filename, const vector<vector<int>>& matrix, double timeElapsed) {
+void saveResultToFile(const string& filename, const vector<vector<int>>& matrix, double timeElapsed, int num_threads) {
     ofstream file(filename);
     if (!file) {
         cerr << "Error: Unable to open file " << filename << endl;
@@ -81,6 +97,7 @@ void saveResultToFile(const string& filename, const vector<vector<int>>& matrix,
     int rows = matrix.size(), cols = matrix[0].size();
 
     file << "Matrix size: " << rows << "x" << cols << endl;
+    file << "Number of threads: " << num_threads << endl;
     file << "Execution time: " << timeElapsed << " seconds" << endl;
     file << "Resulting matrix:" << endl;
     
@@ -95,7 +112,8 @@ void saveResultToFile(const string& filename, const vector<vector<int>>& matrix,
 
 int main() {
     srand(time(0)); // Initialize random seed
-    vector<int> sizes = {100, 200, 300, 400, 500};
+    vector<int> sizes = {100, 200, 300, 400, 500}; // Kích thước ma trận
+    vector<int> thread_counts = {0, 2, 4, 6, 8};  // Số luồng: 0 là tuần tự, còn lại là song song
 
     for (int size : sizes) {
         // Generate and save random matrices
@@ -120,17 +138,30 @@ int main() {
             continue;
         }
 
-        // Multiply matrices and measure execution time
-        auto start = high_resolution_clock::now();
-        vector<vector<int>> result = multiplyMatrices(A_read, B_read);
-        auto stop = high_resolution_clock::now();
-        duration<double> elapsed = stop - start;
+        // Test with different thread counts
+        for (int num_threads : thread_counts) {
+            vector<vector<int>> result;
+            double elapsed_time;
+            string resultFile = "resultMatrix_" + to_string(size) + "_threads_" + to_string(num_threads) + ".txt";
 
-        // Save the result
-        string resultFile = "resultMatrix_" + to_string(size) + ".txt";
-        saveResultToFile(resultFile, result, elapsed.count());
+            auto start = high_resolution_clock::now();
+            if (num_threads == 0) {
+                // Sequential execution
+                result = multiplyMatricesSequential(A_read, B_read);
+            } else {
+                // Parallel execution with specified number of threads
+                result = multiplyMatricesParallel(A_read, B_read, num_threads);
+            }
+            auto stop = high_resolution_clock::now();
+            duration<double> elapsed = stop - start;
+            elapsed_time = elapsed.count();
 
-        cout << "Size: " << size << "x" << size << ", Execution Time: " << elapsed.count() << " seconds\n";
+            // Save the result
+            saveResultToFile(resultFile, result, elapsed_time, num_threads);
+
+            cout << "Size: " << size << "x" << size << ", Threads: " << num_threads 
+                 << ", Execution Time: " << elapsed_time << " seconds\n";
+        }
     }
 
     return 0;
