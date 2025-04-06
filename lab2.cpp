@@ -66,7 +66,6 @@ vector<vector<int>> multiplyMatricesSequential(const vector<vector<int>>& A, con
             }
         }
     }
-
     return result;
 }
 
@@ -83,37 +82,29 @@ vector<vector<int>> multiplyMatricesParallel(const vector<vector<int>>& A, const
             }
         }
     }
-
     return result;
 }
 
-// Function to save the result matrix along with execution time and problem size
-void saveResultToFile(const string& filename, const vector<vector<int>>& matrix, double timeElapsed, int num_threads) {
-    ofstream file(filename);
+// Function to save execution times to a single file
+void saveExecutionTimes(const string& filename, int size, int num_threads, double timeElapsed) {
+    ofstream file(filename, ios::app); 
     if (!file) {
         cerr << "Error: Unable to open file " << filename << endl;
         exit(1);
     }
-    int rows = matrix.size(), cols = matrix[0].size();
-
-    file << "Matrix size: " << rows << "x" << cols << endl;
-    file << "Number of threads: " << num_threads << endl;
-    file << "Execution time: " << timeElapsed << " seconds" << endl;
-    file << "Resulting matrix:" << endl;
-    
-    for (const auto& row : matrix) {
-        for (int val : row)
-            file << val << " ";
-        file << endl;
-    }
-
+    file << size << " " << num_threads << " " << timeElapsed << endl;
     file.close();
 }
 
 int main() {
-    srand(time(0)); // Initialize random seed
-    vector<int> sizes = {100, 200, 300, 400, 500}; // Kích thước ma trận
-    vector<int> thread_counts = {0, 2, 4, 6, 8};  // Số luồng: 0 là tuần tự, còn lại là song song
+    srand(time(0)); 
+    vector<int> sizes = {100, 200, 400, 1000};
+    vector<int> thread_counts = {0, 2, 4, 8};
+    string timeFile = "execution_times.txt";
+
+    // Clear the execution times file before starting
+    ofstream clearFile(timeFile, ios::trunc);
+    clearFile.close();
 
     for (int size : sizes) {
         // Generate and save random matrices
@@ -142,22 +133,18 @@ int main() {
         for (int num_threads : thread_counts) {
             vector<vector<int>> result;
             double elapsed_time;
-            string resultFile = "resultMatrix_" + to_string(size) + "_threads_" + to_string(num_threads) + ".txt";
 
             auto start = high_resolution_clock::now();
             if (num_threads == 0) {
-                // Sequential execution
                 result = multiplyMatricesSequential(A_read, B_read);
             } else {
-                // Parallel execution with specified number of threads
                 result = multiplyMatricesParallel(A_read, B_read, num_threads);
             }
             auto stop = high_resolution_clock::now();
-            duration<double> elapsed = stop - start;
-            elapsed_time = elapsed.count();
+            elapsed_time = duration<double>(stop - start).count();
 
-            // Save the result
-            saveResultToFile(resultFile, result, elapsed_time, num_threads);
+            // Save execution time to a single file
+            saveExecutionTimes(timeFile, size, num_threads, elapsed_time);
 
             cout << "Size: " << size << "x" << size << ", Threads: " << num_threads 
                  << ", Execution Time: " << elapsed_time << " seconds\n";

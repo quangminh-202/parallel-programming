@@ -1,30 +1,32 @@
 import matplotlib.pyplot as plt
 
-# Dữ liệu từ kết quả của bạn
-sizes = [100, 200, 300, 400, 500]
-threads = [0, 2, 4]
+# Read data from file
+sizes = []
+times = {0: [], 2: [], 4: [], 8: []}  # Dictionary to store times for each thread count
 
-# Thời gian thực thi từ kết quả thực tế
-execution_times = {
-    100: [0.00791355, 0.011299, 0.00961091],
-    200: [0.0780922, 0.0715596, 0.073077],
-    300: [0.223099, 0.228929, 0.224268],
-    400: [0.474972, 0.490444, 0.488562],
-    500: [0.935504, 0.933048, 0.928164]
-}
+with open("execution_times.txt", "r") as file:
+    for line in file:
+        size, num_threads, time = map(float, line.split())
+        if int(num_threads) not in times:
+            times[int(num_threads)] = []
+        if int(size) not in sizes:
+            sizes.append(int(size))
+        times[int(num_threads)].append(time)
 
-# Vẽ biểu đồ
-plt.figure(figsize=(10, 6))  # Kích thước biểu đồ
+# Plot the graph
+plt.figure(figsize=(10, 6))
 
-for size in sizes:
-    plt.plot(threads, execution_times[size], marker='o', label=f'{size}x{size}')
+# Plot for each thread count
+for num_threads, time_list in times.items():
+    label = "No threads" if num_threads == 0 else f"{num_threads} threads"
+    plt.plot(sizes, time_list, label=label, marker='o')
 
-# Thiết lập tiêu đề và nhãn
-plt.title('Execution Time vs Number of Threads for Different Matrix Sizes', fontsize=14)
-plt.xlabel('Number of Threads', fontsize=12)
-plt.ylabel('Execution Time (seconds)', fontsize=12)
-plt.legend(title='Matrix Size')
-plt.grid(True)  # Thêm lưới để dễ đọc
+# Set title and labels
+plt.title("Execution Time vs Matrix Size")
+plt.xlabel("Matrix Size (Size x Size)")
+plt.ylabel("Execution Time (seconds)")
+plt.legend()
+plt.grid(True)
 
-# Hiển thị biểu đồ
+# Display the graph
 plt.show()
